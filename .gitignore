@@ -1,0 +1,46 @@
+# Variables d'environnement — NE JAMAIS COMMITTER
+.env
+.env.*
+
+# Poids de modèles — trop lourds pour Git
+*.pt
+*.bin
+*.safetensors
+*.gguf
+
+# Base ChromaDB persistante — recréée localement
+data/chroma_db/
+
+# Cache HuggingFace
+.cache/
+~/.cache/huggingface/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Pytest & coverage
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Rapports générés
+monitoring/rapport_eval.json
+evaluation/rapport_eval.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

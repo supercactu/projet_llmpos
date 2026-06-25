@@ -1,0 +1,37 @@
+name: Code quality
+
+# Annule les runs précédents sur la même branche pour économiser les minutes CI
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    name: pre-commit (ruff · mypy · hooks)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Indispensable : clone le dépôt sur le runner avant toute commande
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Cache des environnements pre-commit
+      # La clé change quand .pre-commit-config.yaml est modifié → cache invalidé
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      # L'action officielle installe pre-commit et exécute --all-files automatiquement
+      - uses: pre-commit/action@v3.0.1

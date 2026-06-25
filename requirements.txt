@@ -1,0 +1,25 @@
+# LLM & embeddings
+transformers>=4.40
+torch>=2.2
+sentence-transformers>=3.0
+
+# Base vectorielle
+chromadb>=0.5
+
+# API
+fastapi>=0.111
+uvicorn[standard]>=0.29
+pydantic>=2.7
+
+# Observabilité
+prometheus-fastapi-instrumentator>=6.1
+prometheus-client>=0.20
+langfuse>=2.0
+python-dotenv>=1.0
+
+# Surveillance
+evidently>=0.4
+pandas>=2.0
+
+# Évaluation
+rouge-score>=0.1.2

@@ -1,0 +1,9 @@
+# Tests
+pytest>=8.0
+pytest-mock>=3.14
+coverage>=7.5
+
+# Qualité de code
+pre-commit>=3.7
+ruff>=0.4
+mypy>=1.10

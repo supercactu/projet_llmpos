@@ -1,0 +1,100 @@
+name: Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    # Ce job ne démarre que si le job de qualité de code a réussi.
+    # Économie de ressources : inutile de lancer les tests si ruff échoue.
+    needs: [pre-commit]
+    # Appel du workflow codecheck pour récupérer le job pre-commit via needs
+    # Note : needs inter-workflow nécessite workflow_call ; ici on duplique
+    # le job inline pour garder la dépendance dans le même fichier.
+    # → Voir codecheck.yaml pour la version standalone.
+
+    name: Tests (${{ matrix.os }} / Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # Ne pas annuler tous les jobs si l'un échoue :
+      # on veut voir quels OS/versions sont affectés
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Cache pip : invalidé quand requirements*.txt changent
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-${{ matrix.python-version }}-
+
+      # Cache du modèle HuggingFace : invalidé quand le code source change
+      # (le nom du modèle est défini dans src/)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-${{ hashFiles('src/**/*.py', 'rag/**/*.py') }}
+          restore-keys: |
+            hf-${{ runner.os }}-
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements_tests.txt
+
+      - name: Lancer les tests
+        run: pytest tests/ -v --tb=short
+
+      # Rapport de couverture : uniquement sur ubuntu / Python 3.11
+      # pour éviter 6 rapports identiques
+      - name: Couverture de code
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: |
+          coverage run -m pytest tests/
+          coverage report -m --fail-under=70
+          coverage html
+
+      - name: Publier le rapport HTML de couverture
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-couverture
+          path: htmlcov/
+          retention-days: 7
+
+  # Job séparé qui re-déclare la dépendance sur codecheck
+  # pour que la matrice entière attende la qualité de code
+  pre-commit:
+    name: pre-commit (ruff · mypy · hooks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+      - uses: pre-commit/action@v3.0.1

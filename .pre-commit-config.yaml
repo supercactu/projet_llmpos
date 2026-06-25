@@ -1,0 +1,39 @@
+repos:
+  # ── Hooks généraux (trailing whitespace, EOF, YAML, fichiers lourds, clés) ──
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace        # Supprime les espaces en fin de ligne
+      - id: end-of-file-fixer          # Garantit un \n final dans chaque fichier
+      - id: check-yaml                 # Vérifie la syntaxe des fichiers YAML
+      - id: check-added-large-files    # Bloque les fichiers > 500 Ko
+        args: ["--maxkb=500"]
+      - id: detect-private-key         # Détecte les clés API committées par erreur
+      - id: check-merge-conflict       # Détecte les marqueurs de conflit Git oubliés
+      - id: check-json                 # Vérifie la syntaxe JSON
+
+  # ── Ruff : linter + formateur Python (remplace flake8, isort, black) ────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.12
+    hooks:
+      - id: ruff                       # Linting (E, F, I, B et plus selon pyproject.toml)
+        args: ["--fix"]                # Corrige automatiquement les erreurs simples
+      - id: ruff-format                # Formatage (équivalent black)
+
+  # ── mypy : vérification statique des types ───────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.16.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - "types-requests"
+        args: ["--ignore-missing-imports"]  # Évite les faux positifs sur torch, transformers
+
+  # ── Hook local : bloque les poids de modèle ─────────────────────────────────
+  - repo: local
+    hooks:
+      - id: no-model-weights
+        name: Bloquer les poids de modèle
+        language: system
+        entry: bash -c 'fichiers=$(git diff --cached --name-only | grep -E "\.(pt|bin|safetensors)$"); if [ -n "$fichiers" ]; then echo "ERREUR : fichiers de poids détectés :"; echo "$fichiers"; exit 1; fi'
+        pass_filenames: false

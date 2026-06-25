@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "mon-projet-llmops"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+# ── Ruff — linter + formateur ────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py310"          # Version Python minimale ciblée
+exclude = [
+    ".git",
+    "__pycache__",
+    "data/chroma_db",
+    ".venv",
+]
+
+[tool.ruff.lint]
+# E  : erreurs de style PEP8 (pycodestyle)
+# F  : erreurs logiques (pyflakes) — variables non utilisées, imports inutiles…
+# I  : ordre des imports (isort)
+# B  : bugs courants (flake8-bugbear) — comparaisons avec is, mutables par défaut…
+# UP : modernisation du code Python (pyupgrade)
+# W  : avertissements de style
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = [
+    "E501",   # Longueur de ligne — géré par ruff-format
+    "B008",   # Ne pas appeler des fonctions dans les valeurs par défaut (FastAPI le fait)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rag", "src", "api", "monitoring", "evaluation"]
+
+# ── mypy — vérification statique des types ───────────────────────────────────
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true            # Signale les retours de type Any non explicites
+warn_unused_configs = true        # Signale les options mypy inutilisées
+ignore_missing_imports = true     # Évite les faux positifs sur torch, transformers, chromadb
+
+# Ignorer les imports manquants pour les bibliothèques sans stubs
+[[tool.mypy.overrides]]
+module = [
+    "transformers.*",
+    "torch.*",
+    "sentence_transformers.*",
+    "chromadb.*",
+    "langfuse.*",
+    "evidently.*",
+    "prometheus_client.*",
+    "rouge_score.*",
+]
+ignore_missing_imports = true
+
+# ── pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+# ── coverage ─────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["src", "rag", "api"]   # Dossiers mesurés (exclut monitoring/ et evaluation/)
+omit = [
+    "tests/*",
+    "data/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 70                   # Fait échouer si couverture < 70 %
